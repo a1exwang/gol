@@ -46,7 +46,7 @@ std::string get_operation_name(Word operation) {
 }
 
 void dump_instructions(std::ostream &os, const Space *space, int64_t start, int64_t count, int64_t direction) {
-  int64_t offset = 0;
+  int64_t offset = start;
 
   // offset += direction within range
   auto move_offset = [&offset, direction, space]() {
