@@ -1,16 +1,24 @@
 #pragma once
 
+
 #include <cstdint>
 #include <cstddef>
 #include <cassert>
 #include <cmath>
+#include <memory>
+#include <list>
+#include <random>
 
 namespace gol {
 typedef int32_t Word;
+class Thread;
 
 struct Space {
-  Word *data_;
-  size_t size;
+ public:
+  Space(uint32_t seed, size_t size);
+
+  std::mt19937 &rng() { return rng_; }
+
   bool is_valid(Word address) { return address >= 0 && address < size; }
   Word &at(Word address) {
     assert(is_valid(address));
@@ -27,8 +35,23 @@ struct Space {
     }
 
   }
-};
 
+  void run();
+
+  Thread *spawn();
+
+  void dump_threads(std::ostream &os);
+
+  std::unique_ptr<Word[]> data_;
+  size_t size;
+  uint32_t seed_;
+  std::mt19937 rng_;
+
+ private:
+  int64_t last_thread_id_ = 0;
+  std::list<Thread> threads;
+  int64_t time_ = 0;
+};
 
 }
 
