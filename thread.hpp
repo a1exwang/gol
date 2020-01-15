@@ -19,8 +19,10 @@ namespace gol {
 class Thread {
  public:
   Thread(Space *space, int64_t id) :space_(space), id_(id) {}
-  Thread(Space *space, int64_t id, int64_t pc, int64_t direction, Word initial_engery)
-      : space_(space), id_(id), pc_(pc), direction_(direction), is_alive_(true), energy_(initial_engery) {
+  Thread(Space *space, int64_t id,
+      int64_t pc, int64_t direction, Word initial_engery, int64_t gene_begin, int64_t gene_length)
+      : space_(space), id_(id), pc_(pc), direction_(direction), is_alive_(true), energy_(initial_engery),
+        gene_begin_(gene_begin), gene_length_(gene_length) {
   }
 
   Word read_word() {
@@ -70,36 +72,17 @@ class Thread {
 
  private:
   void inherit(Thread *parent) {
-    this->passive_energy_consumption = parent->passive_energy_consumption;
-    this->dup_energy_consumption = parent->dup_energy_consumption;
-    this->collect_efficiency = parent->collect_efficiency;
+    this->passive_energy_consumption_ = parent->passive_energy_consumption_;
+    this->dup_energy_consumption_ = parent->dup_energy_consumption_;
+    this->dup_range_ = parent->dup_range_;
+    this->collect_efficiency_ = parent->collect_efficiency_;
   }
   void die(const std::string &cause) {
     is_alive_ = false;
     death_cause_ = cause;
   }
 
-  void dup(Thread &child, Word target_address) {
-
-    this->energy_ -= dup_energy_consumption;
-    child.space_ = this->space_;
-    child.pc_ = space_->round(target_address + this->gene_entry_offset_);
-    child.direction_ = this->direction_;
-    child.gene_begin_ = target_address;
-    child.gene_end_ = this->gene_end_ - this->gene_begin_ + child.gene_begin_;
-    child.gene_entry_offset_ = this->gene_entry_offset_;
-    child.target_ = (this->gene_end_ + 1) % space_->size;
-    child.energy_ = this->energy_ / 2;
-    child.parent_id_ = this->id_;
-    child.inherit(this);
-    this->energy_ = this->energy_ / 2;
-
-    LOG(INFO) << "report::instruction dup "
-                << "0x" << std::hex << this->id_ << " "
-                << "0x" << std::hex << child.id_ << " "
-                << "0x" << std::hex << target_address << " "
-                << std::dec << this->energy_;
-  }
+  void dup(Thread &child, Word target_address);
 
   Space *space_;
   int64_t id_ = -1;
@@ -109,7 +92,7 @@ class Thread {
 
   // registers
   Word gene_begin_;
-  Word gene_end_;
+  Word gene_length_;
   Word gene_entry_offset_;
   Word target_;
 
@@ -117,9 +100,10 @@ class Thread {
   int64_t energy_ = 0;
 
   // attributes
-  Word passive_energy_consumption = 1;
-  Word dup_energy_consumption = 1;
-  double collect_efficiency = 1e-4;
+  Word passive_energy_consumption_ = 1;
+  Word dup_energy_consumption_ = 1;
+  Word dup_range_ = 128;
+  double collect_efficiency_ = 1e-4;
 
   // statistics
   int64_t time_alive_ = 0;

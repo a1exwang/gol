@@ -28,11 +28,11 @@ void Thread::step() {
       break;
     case OP_DUP: {
       // make sure the children have at least 1 energy.
-      if (this->energy_ >= 2 + dup_energy_consumption) {
-//        auto target_address = space_->round(operand0);
-//        auto target_address = space_->round(space_->rng()());
+      if (this->energy_ >= 2 + dup_energy_consumption_) {
+//        auto target_address = space_->clip(operand0);
+//        auto target_address = space_->clip(space_->rng()());
 
-        std::uniform_int_distribution<Word> offset_dist(-128, 128);
+        std::uniform_int_distribution<Word> offset_dist(-dup_range_, dup_range_);
         auto target_address = pc_ + offset_dist(space_->rng());
 
         this->dup(*space_->spawn(), target_address);
@@ -48,13 +48,13 @@ void Thread::step() {
       break;
     case OP_COLLECT:
       // collect energy from target, move target by 1
-      target_ = space_->round(target_);
+      target_ = space_->clip(target_);
 
       if (space_->at(target_) > 0) {
         std::uniform_real_distribution<double> dist(0, 1);
         double collect_ratio = dist(space_->rng());
         auto energy_used = int64_t(space_->at(target_) * collect_ratio);
-        auto energy_collected = int64_t(energy_used * collect_efficiency);
+        auto energy_collected = int64_t(energy_used * collect_efficiency_);
 
         space_->at(target_) -= energy_used;
         energy_ += energy_collected;
@@ -73,12 +73,39 @@ void Thread::step() {
 //        is_alive_ = false;
   }
 
-  energy_ -= passive_energy_consumption;
+  energy_ -= passive_energy_consumption_;
 
   if (energy_ <= 0) {
     die("out of energy");
     return;
   }
+}
+void Thread::dup(Thread &child, Word target_address) {
+
+  this->energy_ -= dup_energy_consumption_;
+  child.space_ = this->space_;
+  child.pc_ = space_->clip(target_address + this->gene_entry_offset_);
+  child.direction_ = this->direction_;
+  child.gene_begin_ = target_address;
+  child.gene_length_ = this->gene_length_;
+  child.gene_entry_offset_ = this->gene_entry_offset_;
+  child.target_ = (this->gene_begin_ + (this->gene_length_ + 1) * this->direction_);
+  child.energy_ = this->energy_ / 2;
+  child.parent_id_ = this->id_;
+  child.inherit(this);
+  this->energy_ = this->energy_ / 2;
+
+  space_->memcpy(
+      child.gene_begin_, child.direction_,
+      this->gene_begin_, this->direction_,
+      this->gene_length_);
+
+
+  LOG(INFO) << "report::instruction dup "
+            << "0x" << std::hex << this->id_ << " "
+            << "0x" << std::hex << child.id_ << " "
+            << "0x" << std::hex << target_address << " "
+            << std::dec << this->energy_;
 }
 
 }

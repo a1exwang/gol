@@ -27,8 +27,10 @@ Space::Space(uint32_t seed, size_t size, bool use_renderer) :data_(new Word[size
 
   std::uniform_int_distribution<Word> pc_dist(0, size);
   std::uniform_int_distribution<Word> energy_dist(0, max_initial_energy);
+  int64_t gene_length = InstructionWidth * 128;
   for (int i = 0; i < thread_count; i++) {
-    threads.emplace_back(this, last_thread_id_++, pc_dist(rng()), i % 2 == 0 ? 1 : -1, energy_dist(rng()));
+    threads.emplace_back(this, last_thread_id_++, pc_dist(rng()),
+        i % 2 == 0 ? 1 : -1, energy_dist(rng()), pc_dist(rng()), gene_length);
   }
 
   if (use_renderer_) {
@@ -42,7 +44,7 @@ void Space::init_renderer() {
     exit(1);
   }
   window = SDL_CreateWindow(
-      "Mandelbrot Set",
+      "GOL",
       SDL_WINDOWPOS_UNDEFINED, SDL_WINDOWPOS_UNDEFINED,
       window_width, window_height,
       SDL_WINDOW_SHOWN
@@ -101,7 +103,7 @@ int64_t Space::energy_inlet() {
 
   int64_t total_income = 0;
   for (int64_t i = 0; i < energy_income_count_; i++) {
-    auto address = Word(dist_address(rng_));
+    auto address = clip(Word(dist_address(rng_)));
     auto energy = int64_t(dist_energy(rng_));
     if (energy < 0)
       energy = 0;
@@ -160,6 +162,17 @@ Space::~Space() {
     SDL_DestroyRenderer(renderer);
   }
 
+}
+void Space::memcpy(size_t dest, int dest_direction, size_t src, int src_direction, size_t n) {
+  CHECK(n >= 0);
+  size_t dest_ptr = clip(dest);
+  size_t src_ptr = clip(src);
+
+  for (size_t i = 0; i < n; i++) {
+    data_[dest_ptr] = data_[src_ptr];
+    dest_ptr = clip(dest_ptr + dest_direction);
+    src_ptr = clip(src_direction + src_direction);
+  }
 }
 
 }

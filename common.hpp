@@ -23,12 +23,12 @@ struct Space {
 
   std::mt19937 &rng() { return rng_; }
 
-  bool is_valid(Word address) { return address >= 0 && address < size; }
-  Word &at(Word address) {
+  bool is_valid(size_t address) { return address >= 0 && address < size; }
+  Word &at(size_t address) {
     assert(is_valid(address));
     return data_[address];
   }
-  Word round(Word address) {
+  size_t clip(size_t address) {
     if (is_valid(address))
       return address;
 
@@ -39,6 +39,8 @@ struct Space {
     }
 
   }
+
+  void memcpy(size_t dest, int dest_direction, size_t src, int src_direction, size_t n);
 
   bool throw_a_coin(double probability);
 
@@ -73,11 +75,11 @@ struct Space {
   std::list<Thread> threads;
   int64_t time_ = 0;
   size_t max_thread_count_ = 1024 * 1024;
-  int64_t max_energy_income_rate_ = 1000L * 1000L;
-  double energy_income_address_average = 1024;
-  double energy_income_address_stdev = 1;
-  int64_t energy_income_count_ = 1280;
 
+  int64_t max_energy_income_rate_ = 1000L * 1000L;
+  double energy_income_address_average = 0;
+  double energy_income_address_stdev = 1024;
+  int64_t energy_income_count_ = 128;
 
   SDL_Renderer *renderer;
   SDL_Window *window;

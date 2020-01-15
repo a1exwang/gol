@@ -22,7 +22,7 @@ int main(int argc, const char **argv) {
   size_t world_size = 1024 * 128;
 
   // randomly fill space
-  uint32_t seed = 123;
+  uint32_t seed = 124;
   Space space(seed, world_size, use_renderer);
 
 //  std::cout << "Space: " << std::endl;
