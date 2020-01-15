@@ -16,16 +16,25 @@ void Thread::step() {
 //  dump_instructions(std::cout, space_, pc_, 1, direction_);
 
   switch (operation) {
-    case OP_SUICIDE:
-//      die("suicide");
+    case OP_SUICIDE: {
+      auto probability = 0.01; //double(operand0) / std::numeric_limits<Word>::max();
+      if (space_->throw_a_coin(probability)) {
+        die("suicide");
+      }
       break;
+    }
     case OP_NOOP:
       // do nothing
       break;
     case OP_DUP: {
       // make sure the children have at least 1 energy.
       if (this->energy_ >= 2 + dup_energy_consumption) {
-        auto target_address = space_->round(operand0);
+//        auto target_address = space_->round(operand0);
+//        auto target_address = space_->round(space_->rng()());
+
+        std::uniform_int_distribution<Word> offset_dist(-128, 128);
+        auto target_address = pc_ + offset_dist(space_->rng());
+
         this->dup(*space_->spawn(), target_address);
       }
       break;
@@ -41,13 +50,23 @@ void Thread::step() {
       // collect energy from target, move target by 1
       target_ = space_->round(target_);
 
-      auto energy_collected = abs(space_->at(target_)) % 100;
-      space_->at(target_) = 0;
+      if (space_->at(target_) > 0) {
+        std::uniform_real_distribution<double> dist(0, 1);
+        double collect_ratio = dist(space_->rng());
+        auto energy_used = int64_t(space_->at(target_) * collect_ratio);
+        auto energy_collected = int64_t(energy_used * collect_efficiency);
 
-      energy_ += energy_collected;
+        space_->at(target_) -= energy_used;
+        energy_ += energy_collected;
+
+        VLOG(2) << "report::instruction collect "
+                << collect_ratio << " "
+                << energy_collected << " "
+                << energy_used
+                << " 0x" << std::hex << pc_;
+      }
       move(target_, 1);
 
-      VLOG(2) << "report::instruction collect " << energy_collected << " 0x" << std::hex << pc_;
       break;
 //      default:
 //        // invalid operation results death

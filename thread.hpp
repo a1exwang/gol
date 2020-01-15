@@ -72,6 +72,7 @@ class Thread {
   void inherit(Thread *parent) {
     this->passive_energy_consumption = parent->passive_energy_consumption;
     this->dup_energy_consumption = parent->dup_energy_consumption;
+    this->collect_efficiency = parent->collect_efficiency;
   }
   void die(const std::string &cause) {
     is_alive_ = false;
@@ -113,11 +114,12 @@ class Thread {
   Word target_;
 
   // status
-  Word energy_ = 0;
+  int64_t energy_ = 0;
 
   // attributes
   Word passive_energy_consumption = 1;
   Word dup_energy_consumption = 1;
+  double collect_efficiency = 1e-4;
 
   // statistics
   int64_t time_alive_ = 0;

@@ -9,8 +9,8 @@
 namespace gol {
 struct Space;
 
-constexpr Word OP_SUICIDE = 0x0;
-constexpr Word OP_NOOP = 0x1;
+constexpr Word OP_NOOP = 0x0;
+constexpr Word OP_SUICIDE = 0x1;
 constexpr Word OP_DUP = 0x2;
 constexpr Word OP_COPY = 0x3;
 constexpr Word OP_JUMP = 0x4;
